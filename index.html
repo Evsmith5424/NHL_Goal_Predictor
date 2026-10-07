@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NHL Goal Odds</title>
+<meta name="description" content="Poisson model that predicts goal probabilities for any NHL matchup.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Based on 2025-26 regular season · 82 games per team</div>
+    <h1>NHL Goal <span>Odds</span></h1>
+    <p class="lede">Pick two teams. The model combines one team's scoring rate with the other team's goals-allowed rate to estimate how many goals each side scores in regulation, then shows the chance of every score.</p>
+    <div class="rinkline" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </header>
+
+  <section class="matchup" aria-label="Matchup">
+    <div class="pick">
+      <label for="team1"><span class="eyebrow">Team 1</span><select id="team1"></select></label>
+      <button class="swap" id="swap" type="button" aria-label="Swap teams">Swap</button>
+      <label for="team2"><span class="eyebrow">Team 2</span><select id="team2"></select></label>
+    </div>
+    <div class="score">
+      <div class="side t1"><span class="abbr" id="a1"></span><span class="xg" id="x1"></span><span class="eyebrow">expected goals</span></div>
+      <div class="mid">TOTAL<b id="xt"></b>expected</div>
+      <div class="side t2"><span class="abbr" id="a2"></span><span class="xg" id="x2"></span><span class="eyebrow">expected goals</span></div>
+    </div>
+    <div class="outcome">
+      <div class="eyebrow">Result after 60 minutes</div>
+      <div class="obar" id="obar"><div class="w1"></div><div class="tie"></div><div class="w2"></div></div>
+      <div class="olabels" id="olabels"></div>
+    </div>
+  </section>
+
+  <section class="dists" aria-label="Goal probabilities">
+    <div class="panel p-t1"><header><h3 id="h1"></h3><span class="sub">Goals scored by Team 1</span></header><table class="dtable" id="d1"></table></div>
+    <div class="panel p-t2"><header><h3 id="h2"></h3><span class="sub">Goals scored by Team 2</span></header><table class="dtable" id="d2"></table></div>
+    <div class="panel p-tot"><header><h3>Total goals</h3><span class="sub">Both teams combined</span></header><table class="dtable" id="dt"></table></div>
+  </section>
+
+  <section style="display:grid;gap:14px" aria-label="Rankings">
+    <div class="rank-head">
+      <div>
+        <div class="eyebrow">All 32 teams</div>
+        <h2 id="rtitle">Offense rankings</h2>
+      </div>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-off" aria-selected="true" type="button">Offense</button>
+        <button role="tab" id="tab-def" aria-selected="false" type="button">Defense</button>
+      </div>
+    </div>
+    <div class="tablebox"><table class="rtable" id="rtable"></table></div>
+  </section>
+
+  <section class="method">
+    <h3 style="color:var(--ink)">How the model works</h3>
+    <p>League average is <span class="num" id="lavg"></span> goals per team per game. Each team gets an attack rating (its goals per game ÷ league average) and a defense rating (its goals allowed per game ÷ league average).</p>
+    <p>Team 1 expected goals = <code>Team 1 attack × Team 2 defense × league average</code>, and the same the other way. Goals are modeled as Poisson-distributed, which treats each scoring chance as independent. Total goals is also Poisson, with its expected value equal to the two teams' expected goals added together.</p>
+    <p>Limits: it uses full-season averages, assumes a neutral rink (no home-ice edge), ignores goalies, injuries and roster changes, and covers regulation only. Empty-net goals are part of the averages but not modeled separately. "Or more" columns are the chance of at least that many goals.</p>
+  </section>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
