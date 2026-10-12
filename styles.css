@@ -91,7 +91,7 @@ select:focus-visible, button:focus-visible { outline: 2px solid var(--blue); out
 .tabs button { font: 700 .9rem var(--f-display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 16px; border: 0; background: var(--board); color: var(--muted); cursor: pointer; }
 .tabs button[aria-selected="true"] { background: var(--ink); color: var(--board); }
 .tablebox { background: var(--board); border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
-.rtable { width: 100%; border-collapse: collapse; min-width: 560px; font-size: .9rem; }
+.rtable { width: 100%; border-collapse: collapse; min-width: 680px; font-size: .9rem; }
 .rtable th { font: 500 .7rem var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--line); }
 .rtable th.l, .rtable td.l { text-align: left; }
 .rtable td { padding: 7px 12px; text-align: right; border-bottom: 1px solid var(--line); font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
@@ -114,3 +114,20 @@ select:focus-visible, button:focus-visible { outline: 2px solid var(--blue); out
   .swap { justify-self: center; }
 }
 @media (prefers-reduced-motion: no-preference) { .dbar, .obar div { transition: width .25s ease; } }
+
+/* Venue + adjustment controls */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; }
+.venue { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.venue button { font: 700 .85rem var(--f-display); text-transform: uppercase; letter-spacing: .05em; padding: 8px 14px; border: 0; background: var(--board); color: var(--muted); cursor: pointer; }
+.venue button[aria-pressed="true"] { background: var(--ink); color: var(--board); }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .88rem; }
+.toggles label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.toggles input { accent-color: var(--blue); width: 16px; height: 16px; }
+.delta { font: .75rem var(--f-mono); color: var(--muted); }
+.corr { display: grid; gap: 14px; }
+.ctable { min-width: 640px; }
+.ctable td.eff { font-family: var(--f-body); color: var(--muted); font-size: .85rem; white-space: normal; min-width: 260px; }
+.ctable td.l { text-align: left; font-family: var(--f-body); }
+.ctable tr.dim td { opacity: .6; }
+.pill { display: inline-block; font: 600 .72rem var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; background: var(--ice); color: var(--muted); border: 1px solid var(--line); }
+.pill.on { background: var(--blue-soft); color: var(--blue); border-color: transparent; }

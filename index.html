@@ -13,7 +13,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">Based on 2025-26 regular season · 82 games per team</div>
+    <div class="eyebrow" id="basis">Based on NHL regular-season stats</div>
     <h1>NHL Goal <span>Odds</span></h1>
     <p class="lede">Pick two teams. The model combines one team's scoring rate with the other team's goals-allowed rate to estimate how many goals each side scores in regulation, then shows the chance of every score.</p>
     <div class="rinkline" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
@@ -25,10 +25,21 @@
       <button class="swap" id="swap" type="button" aria-label="Swap teams">Swap</button>
       <label for="team2"><span class="eyebrow">Team 2</span><select id="team2"></select></label>
     </div>
+    <div class="controls">
+      <div class="venue" id="venue" role="group" aria-label="Where is the game played">
+        <button type="button" data-v="t1" aria-pressed="false">Team 1 home</button>
+        <button type="button" data-v="neutral" aria-pressed="true">Neutral</button>
+        <button type="button" data-v="t2" aria-pressed="false">Team 2 home</button>
+      </div>
+      <div class="toggles">
+        <label for="adj-off"><input type="checkbox" id="adj-off"> Regress offense to the mean</label>
+        <label for="adj-home"><input type="checkbox" id="adj-home"> Home-ice edge</label>
+      </div>
+    </div>
     <div class="score">
-      <div class="side t1"><span class="abbr" id="a1"></span><span class="xg" id="x1"></span><span class="eyebrow">expected goals</span></div>
+      <div class="side t1"><span class="abbr" id="a1"></span><span class="xg" id="x1"></span><span class="eyebrow">expected goals</span><span class="delta" id="d1x"></span></div>
       <div class="mid">TOTAL<b id="xt"></b>expected</div>
-      <div class="side t2"><span class="abbr" id="a2"></span><span class="xg" id="x2"></span><span class="eyebrow">expected goals</span></div>
+      <div class="side t2"><span class="abbr" id="a2"></span><span class="xg" id="x2"></span><span class="eyebrow">expected goals</span><span class="delta" id="d2x"></span></div>
     </div>
     <div class="outcome">
       <div class="eyebrow">Result after 60 minutes</div>
@@ -57,15 +68,30 @@
     <div class="tablebox"><table class="rtable" id="rtable"></table></div>
   </section>
 
+  <section class="corr" aria-label="Correlation adjustments">
+    <div>
+      <div class="eyebrow">What changes the prediction</div>
+      <h2>Correlation adjustments</h2>
+      <p class="lede">Only moderate or strong correlations (|r| of 0.40 or more, and statistically significant) are allowed to change the numbers. Measured on 2025-26, 41 home and 41 road games per team.</p>
+    </div>
+    <div class="tablebox"><table class="rtable ctable"><thead><tr><th class="l">Relationship</th><th>r</th><th class="l">Strength</th><th class="l">What the model does with it</th></tr></thead><tbody id="corrbody"></tbody></table></div>
+    <div class="method">
+      <p><b>Regress offense to the mean.</b> Teams' scoring at home and on the road correlates at r = 0.53. Treating that as a split-half reliability and scaling it to a full season (Spearman-Brown: 2r ÷ (1 + r)) says about <span class="num" id="keep"></span> of a team's scoring edge over league average is repeatable skill. The rest is treated as luck, so each attack rating is pulled that far back toward average. Defense isn't regressed because its home/road correlation (0.38) is below the cutoff.</p>
+      <p><b>Home-ice edge.</b> This one comes from a significant difference in averages rather than a correlation: home teams scored 3.15 a game, road teams 3.01 (<span class="num" id="hf"></span>). It only applies when you pick a home team. Because team strength carries across venues (r = 0.56), the same league-wide factor is used for every team instead of each team's own split.</p>
+    </div>
+  </section>
+
   <section class="method">
     <h3 style="color:var(--ink)">How the model works</h3>
     <p>League average is <span class="num" id="lavg"></span> goals per team per game. Each team gets an attack rating (its goals per game ÷ league average) and a defense rating (its goals allowed per game ÷ league average).</p>
     <p>Team 1 expected goals = <code>Team 1 attack × Team 2 defense × league average</code>, and the same the other way. Goals are modeled as Poisson-distributed, which treats each scoring chance as independent. Total goals is also Poisson, with its expected value equal to the two teams' expected goals added together.</p>
-    <p>Limits: it uses full-season averages, assumes a neutral rink (no home-ice edge), ignores goalies, injuries and roster changes, and covers regulation only. Empty-net goals are part of the averages but not modeled separately. "Or more" columns are the chance of at least that many goals.</p>
+    <p id="blendnote"></p>
+    <p>Limits: it uses season averages, uses the same home-ice factor for every team, ignores goalies, injuries and roster changes, and covers regulation only. Empty-net goals are part of the averages but not modeled separately. "Or more" columns are the chance of at least that many goals.</p>
   </section>
 </div>
 
 <script src="data.js"></script>
+<script src="model-config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
