@@ -34,7 +34,18 @@
       <div class="toggles">
         <label for="adj-off"><input type="checkbox" id="adj-off"> Regress offense to the mean</label>
         <label for="adj-home"><input type="checkbox" id="adj-home"> Home-ice edge</label>
+        <label for="adj-rest"><input type="checkbox" id="adj-rest"> Rest days</label>
       </div>
+    </div>
+    <div class="restrow">
+      <div class="restpick"><span class="eyebrow" id="rl1">Team 1 rest</span>
+        <div class="venue restgrp" id="rest-t1" role="group" aria-label="Team 1 days of rest">
+          <button type="button" data-r="b2b" aria-pressed="false">Back-to-back</button><button type="button" data-r="1" aria-pressed="true">1 day</button><button type="button" data-r="2plus" aria-pressed="false">2+ days</button>
+        </div></div>
+      <div class="restpick"><span class="eyebrow" id="rl2">Team 2 rest</span>
+        <div class="venue restgrp" id="rest-t2" role="group" aria-label="Team 2 days of rest">
+          <button type="button" data-r="b2b" aria-pressed="false">Back-to-back</button><button type="button" data-r="1" aria-pressed="true">1 day</button><button type="button" data-r="2plus" aria-pressed="false">2+ days</button>
+        </div></div>
     </div>
     <div class="score">
       <div class="side t1"><span class="abbr" id="a1"></span><span class="xg" id="x1"></span><span class="eyebrow">expected goals</span><span class="delta" id="d1x"></span></div>
@@ -79,6 +90,16 @@
       <p><b>Regress offense to the mean.</b> Teams' scoring at home and on the road correlates at r = 0.53. Treating that as a split-half reliability and scaling it to a full season (Spearman-Brown: 2r ÷ (1 + r)) says about <span class="num" id="keep"></span> of a team's scoring edge over league average is repeatable skill. The rest is treated as luck, so each attack rating is pulled that far back toward average. Defense isn't regressed because its home/road correlation (0.38) is below the cutoff.</p>
       <p><b>Home-ice edge.</b> This one comes from a significant difference in averages rather than a correlation: home teams scored 3.15 a game, road teams 3.01 (<span class="num" id="hf"></span>). It only applies when you pick a home team. Because team strength carries across venues (r = 0.56), the same league-wide factor is used for every team instead of each team's own split.</p>
     </div>
+  </section>
+
+  <section class="corr" aria-label="Rest effects">
+    <div>
+      <div class="eyebrow">Poisson regression</div>
+      <h2>Rest effects</h2>
+      <p class="lede">How much a team's scoring and goals allowed change with its days of rest, after accounting for both teams' strength and home ice. Back-to-back means the team played yesterday.</p>
+    </div>
+    <div class="tablebox"><table class="rtable ctable"><thead><tr><th class="l">Team's rest</th><th>Team-games</th><th>Goals it scores</th><th>Goals it allows</th></tr></thead><tbody id="restbody"></tbody></table></div>
+    <p class="method" id="restnote"></p>
   </section>
 
   <section class="method">

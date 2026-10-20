@@ -131,3 +131,9 @@ select:focus-visible, button:focus-visible { outline: 2px solid var(--blue); out
 .ctable tr.dim td { opacity: .6; }
 .pill { display: inline-block; font: 600 .72rem var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; background: var(--ice); color: var(--muted); border: 1px solid var(--line); }
 .pill.on { background: var(--blue-soft); color: var(--blue); border-color: transparent; }
+
+.restrow { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+.restpick { display: grid; gap: 6px; }
+.restgrp button:disabled { cursor: not-allowed; opacity: .5; }
+.ctable td .ci { display: block; font-size: .72rem; color: var(--muted); font-weight: 400; }
+.ctable td.dim { color: var(--muted); }

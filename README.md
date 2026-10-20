@@ -37,7 +37,7 @@ Home-ice edge: home teams scored 3.15 goals a game vs. 3.01 for road teams (pair
 
 ### Limitations
 
-- Uses season averages, blended with last season early on
+- Team ratings use season averages (post-deadline last season + this season, weighted)
 - Same home-ice factor for every team
 - Ignores goalies, injuries, schedule and roster changes
 - Covers regulation time only
@@ -65,24 +65,28 @@ To run it right away, open the **Actions** tab, pick **Update NHL stats**, and c
 
 > If the Actions tab says workflows are disabled, enable them there. The workflow already has permission to push (`contents: write`). If your repo or organization restricts that, go to **Settings → Actions → General → Workflow permissions** and choose **Read and write permissions**.
 
-### How the two seasons are blended
+### Which games count, and how much
 
-A handful of games can make a team look far better or worse than it is, so each team's goals for, goals against, power play and penalty kill are a weighted mix:
+- **Last season:** only games from the trade deadline on (March 6, 2026 for 2025-26), because those rosters are closest to this season's. Deadlines are listed in `TRADE_DEADLINES` in `scripts/update_stats.py`; add next season's when it's announced.
+- **This season:** every game, each counted `CURRENT_WEIGHT` times (default 3).
 
 ```
-weight on this season = min(games played this season / 25, 1)
-blended = weight × this season + (1 − weight) × last season
+rate = (3 × this-season goals + post-deadline goals) / (3 × this-season games + post-deadline games)
 ```
 
-| Games played | This season | Last season |
-|---|---|---|
-| 0 | 0% | 100% |
-| 5 | 20% | 80% |
-| 10 | 40% | 60% |
-| 20 | 80% | 20% |
-| 25+ | 100% | 0% |
+With about 21 post-deadline games per team, this season's share is roughly 30% after 3 games, 56% after 9, 74% after 20 and 85% after 40.
 
-Change `RAMP_GAMES` in the workflow file to make the switch faster or slower. Seasons roll over automatically: from September on, the script treats the new season as "this season".
+### Rest effects
+
+Each team-game from last season and this season is tagged with the team's days of rest: back-to-back (played yesterday), 1 day, or 2+ days. The script fits a Poisson regression:
+
+```
+goals ~ Poisson(expected goals × scoring[own rest] × allowed[opponent's rest])
+```
+
+Expected goals already account for both teams' strength and home ice, so the factors isolate the effect of rest. Factors are relative to an average game, come with 95% confidence intervals, and only change predictions when p < `REST_MAX_P` (default 0.05). On the site, pick each team's rest for the game you're predicting.
+
+The rest table is empty until the Action runs for the first time. Run it once from the Actions tab after uploading.
 
 ### Running the update yourself
 
@@ -98,7 +102,7 @@ Needs Python 3.8+ and no extra packages.
 |---|---|
 | `index.html` | Page layout |
 | `styles.css` | Styling, including light and dark mode |
-| `data.js` | Blended team stats (generated, don't edit by hand) |
+| `data.js` | Weighted team stats and rest effects (generated, don't edit by hand) |
 | `app.js` | Poisson model, probability tables and rankings |
 | `model-config.js` | Correlations, cutoff and home/road scoring rates |
 | `scripts/update_stats.py` | Downloads stats and rebuilds `data.js` |

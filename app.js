@@ -1,4 +1,5 @@
 
+function fmtDate(iso) { const [y,m,d] = iso.split("-").map(Number); return new Date(y, m-1, d).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }); }
 const LEAGUE = TEAMS.reduce((s,t)=>s+t.gf,0) / TEAMS.length;
 const byAb = Object.fromEntries(TEAMS.map(t=>[t.ab,t]));
 
@@ -8,10 +9,19 @@ const strong = id => { const c = CORRELATIONS.find(c => c.id === id); return c &
 // to the reliability of a full season: the share of a team's scoring edge that is skill, not luck.
 const rOff = CORRELATIONS.find(c => c.id === "offense").r;
 const OFFENSE_KEEP = (2 * rOff) / (1 + rOff);              // 0.53 -> 0.69
-const VENUE_AVG = (VENUE.homeGF + VENUE.roadGF) / 2;
-const HOME_FACTOR = VENUE.homeGF / VENUE_AVG, ROAD_FACTOR = VENUE.roadGF / VENUE_AVG;
+const V = (typeof META !== "undefined" && META.venue) || VENUE;
+const VENUE_AVG = (V.homeGF + V.roadGF) / 2;
+const HOME_FACTOR = V.homeGF / VENUE_AVG, ROAD_FACTOR = V.roadGF / VENUE_AVG;
 
-const settings = { venue: "neutral", regressOffense: strong("offense"), homeIce: true };
+const REST_LABELS = { b2b: "Back-to-back", "1": "1 day of rest", "2plus": "2+ days of rest" };
+const HAS_REST = typeof REST !== "undefined" && REST !== null;
+const settings = { venue: "neutral", regressOffense: strong("offense"), homeIce: true,
+                   restOn: HAS_REST, rest: { t1: "1", t2: "1" } };
+
+// Rest multipliers from the Poisson regression in scripts/update_stats.py.
+// A factor that isn't statistically significant counts as 1.00.
+function restScoring(b) { if (!settings.restOn || !HAS_REST) return 1; const s = REST[b].scoring; return s.used ? s.f : 1; }
+function restAllowed(b) { if (!settings.restOn || !HAS_REST) return 1; const s = REST[b].allowed; return s.used ? s.f : 1; }
 
 function attack(t) {
   const raw = t.gf / LEAGUE;
@@ -22,7 +32,11 @@ function venueFactor(side) {
   if (!settings.homeIce || settings.venue === "neutral") return 1;
   return settings.venue === side ? HOME_FACTOR : ROAD_FACTOR;
 }
-function expected(att, def, side) { return attack(att) * defense(def) * LEAGUE * venueFactor(side); }
+function expected(att, def, side) {
+  const other = side === "t1" ? "t2" : "t1";
+  return attack(att) * defense(def) * LEAGUE * venueFactor(side)
+       * restScoring(settings.rest[side]) * restAllowed(settings.rest[other]);
+}
 function baseline(att, def) { return (att.gf / LEAGUE) * (def.ga / LEAGUE) * LEAGUE; }
 function poisson(lambda, maxK) {
   const p = []; let v = Math.exp(-lambda);
@@ -59,6 +73,8 @@ function update() {
   document.getElementById("d2x").textContent = delta(l2,b2);
   document.querySelector('#venue [data-v="t1"]').textContent = `${A.ab} home`;
   document.querySelector('#venue [data-v="t2"]').textContent = `${B.ab} home`;
+  document.getElementById("rl1").textContent = `${A.ab} rest`;
+  document.getElementById("rl2").textContent = `${B.ab} rest`;
   document.getElementById("a1").textContent = A.ab;
   document.getElementById("a2").textContent = B.ab;
   document.getElementById("x1").textContent = l1.toFixed(2);
@@ -120,16 +136,36 @@ document.getElementById("swap").addEventListener("click", ()=>{ const a=s1.value
 s1.addEventListener("change", update); s2.addEventListener("change", update);
 document.getElementById("lavg").textContent = LEAGUE.toFixed(2);
 document.getElementById("basis").textContent =
-  `${META.season} blended with ${META.lastSeason} · avg ${META.avgGamesPlayed} games played · updated ${META.updated}`;
+  `${META.season} (×${META.currentWeight} weight) + ${META.lastSeason} after the ${fmtDate(META.deadline)} trade deadline · updated ${META.updated}`;
 document.getElementById("blendnote").textContent =
-  `Early in the season a few games can swing a team's averages a lot, so each team's numbers mix this season (${META.season}) with last season (${META.lastSeason}). ` +
-  `The share from this season equals games played ÷ ${META.rampGames}, reaching 100% at game ${META.rampGames}. The "This season" column in the rankings shows each team's current share. Stats refresh every Monday.`;
+  `Team ratings use only ${META.lastSeason} games from the ${fmtDate(META.deadline)} trade deadline on (about ${META.avgPrevGames} per team), since those rosters are closest to today's, plus every ${META.season} game. ` +
+  `Each ${META.season} game counts ${META.currentWeight} times as much as a ${META.lastSeason} game, so this season's share grows as games are played. The "This season" column in the rankings shows each team's current share. Stats refresh every Monday.`;
 // Venue + adjustment controls
 document.querySelectorAll("#venue button").forEach(b => b.addEventListener("click", () => {
   settings.venue = b.dataset.v;
   document.querySelectorAll("#venue button").forEach(x => x.setAttribute("aria-pressed", x === b));
   update();
 }));
+["t1","t2"].forEach(side => document.querySelectorAll(`#rest-${side} button`).forEach(b => b.addEventListener("click", () => {
+  settings.rest[side] = b.dataset.r;
+  document.querySelectorAll(`#rest-${side} button`).forEach(x => x.setAttribute("aria-pressed", x === b));
+  update();
+})));
+const cbRest = document.getElementById("adj-rest");
+cbRest.checked = settings.restOn; cbRest.disabled = !HAS_REST;
+cbRest.addEventListener("change", () => { settings.restOn = cbRest.checked; update(); });
+document.querySelectorAll(".restgrp button").forEach(b => b.disabled = !HAS_REST);
+const fmtF = s => `×${s.f.toFixed(3)}`;
+const fmtCI = s => `${s.lo.toFixed(2)}–${s.hi.toFixed(2)}`;
+const fmtP = p => p < 0.001 ? "<0.001" : p.toFixed(3);
+document.getElementById("restbody").innerHTML = HAS_REST
+  ? ["b2b","1","2plus"].map(b => { const r = REST[b];
+      const cell = s => `<td class="${s.used ? "key" : "dim"}">${fmtF(s)}<span class="ci">${fmtCI(s)} · p ${fmtP(s.p)}</span></td>`;
+      return `<tr><td class="l">${REST_LABELS[b]}</td><td>${r.games.toLocaleString()}</td>${cell(r.scoring)}${cell(r.allowed)}</tr>`; }).join("")
+  : `<tr><td class="l eff" colspan="4">Rest effects haven't been estimated yet. They're calculated by the weekly update from every game last season and this season. Run <b>Update NHL stats</b> from the repo's Actions tab to fill this in.</td></tr>`;
+document.getElementById("restnote").textContent = HAS_REST
+  ? `Fitted on ${META.restRows.toLocaleString()} team-games. Bold factors are significant (p < ${META.restMaxP}) and change predictions; grey ones count as ×1.000. Ranges are 95% confidence intervals.`
+  : "";
 const cbOff = document.getElementById("adj-off"), cbHome = document.getElementById("adj-home");
 cbOff.checked = settings.regressOffense; cbHome.checked = settings.homeIce;
 cbOff.addEventListener("change", () => { settings.regressOffense = cbOff.checked; update(); });
